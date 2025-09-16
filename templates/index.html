@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}열차 경로 조회{% endblock %}
+
+{% block content %}
+  <section class="search">
+    <h2>경로 검색 조건</h2>
+    <form method="post" class="search-form">
+      <div class="form-grid">
+        <label>
+          출발지
+          <input
+            type="text"
+            name="origin"
+            value="{{ search_params.origin or '천안아산역' }}"
+            placeholder="예: 천안아산역"
+            required
+          />
+        </label>
+        <label>
+          도착지
+          <input
+            type="text"
+            name="destination"
+            value="{{ search_params.destination or '동탄역' }}"
+            placeholder="예: 동탄역"
+            required
+          />
+        </label>
+        <label>
+          출발 일시
+          <input
+            type="datetime-local"
+            name="departure"
+            value="{{ search_params.departure }}"
+            required
+          />
+        </label>
+        <label>
+          기준 시간대
+          <input
+            type="text"
+            name="timezone"
+            value="{{ search_params.timezone or 'Asia/Seoul' }}"
+            placeholder="예: Asia/Seoul"
+          />
+        </label>
+        <label>
+          경로 선호도
+          <select name="routing_preference">
+            <option value="FEWER_TRANSFERS" {% if search_params.routing_preference == 'FEWER_TRANSFERS' %}selected{% endif %}>환승 적게</option>
+            <option value="LESS_WALKING" {% if search_params.routing_preference == 'LESS_WALKING' %}selected{% endif %}>도보 적게</option>
+            <option value="TRANSIT_ROUTING_PREFERENCE_UNSPECIFIED" {% if search_params.routing_preference == 'TRANSIT_ROUTING_PREFERENCE_UNSPECIFIED' %}selected{% endif %}>기본값</option>
+          </select>
+        </label>
+      </div>
+      <div class="actions">
+        <button type="submit">경로 조회</button>
+      </div>
+    </form>
+  </section>
+
+  {% if routes %}
+    <section class="results">
+      <h2>조회 결과</h2>
+      {% for route in routes %}
+        <article class="route">
+          <h3>경로 {{ loop.index }}</h3>
+          {% for leg in route.legs %}
+            <div class="leg">
+              <h4>세부 구간 {{ loop.index }}</h4>
+              <ol class="steps">
+                {% for step in leg.steps %}
+                  <li>
+                    <div class="step-header">
+                      <strong class="line-name">{{ step.line_name or '노선명 미제공' }}</strong>
+                      {% if step.vehicle_type %}
+                        <span class="vehicle">{{ step.vehicle_type.replace('_', ' ') }}</span>
+                      {% endif %}
+                      {% if step.headsign %}
+                        <span class="headsign">(방면: {{ step.headsign }})</span>
+                      {% endif %}
+                    </div>
+                    <div class="step-body">
+                      <div>출발: {{ step.departure_stop or '미제공' }} — {{ step.departure_time or '시간 정보 없음' }}</div>
+                      <div>도착: {{ step.arrival_stop or '미제공' }} — {{ step.arrival_time or '시간 정보 없음' }}</div>
+                      {% if step.stop_count %}
+                        <div class="stop-count">경유 정차역: {{ step.stop_count }}곳</div>
+                      {% endif %}
+                    </div>
+                  </li>
+                {% endfor %}
+              </ol>
+            </div>
+          {% endfor %}
+        </article>
+      {% endfor %}
+    </section>
+  {% endif %}
+
+  {% if raw_response %}
+    <section class="raw-response">
+      <details>
+        <summary>API 원본 응답 보기</summary>
+        <pre>{{ raw_response | tojson(indent=2, ensure_ascii=False) }}</pre>
+      </details>
+    </section>
+  {% endif %}
+{% endblock %}
